@@ -1,25 +1,186 @@
-﻿
-Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio Version 17
-VisualStudioVersion = 17.14.36203.30 d17.14
-MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Examen I Progra II", "Examen I Progra II\Examen I Progra II.csproj", "{84313079-188B-49DA-9674-BF49CB93D1BB}"
-EndProject
-Global
-	GlobalSection(SolutionConfigurationPlatforms) = preSolution
-		Debug|Any CPU = Debug|Any CPU
-		Release|Any CPU = Release|Any CPU
-	EndGlobalSection
-	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{84313079-188B-49DA-9674-BF49CB93D1BB}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{84313079-188B-49DA-9674-BF49CB93D1BB}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{84313079-188B-49DA-9674-BF49CB93D1BB}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{84313079-188B-49DA-9674-BF49CB93D1BB}.Release|Any CPU.Build.0 = Release|Any CPU
-	EndGlobalSection
-	GlobalSection(SolutionProperties) = preSolution
-		HideSolutionNode = FALSE
-	EndGlobalSection
-	GlobalSection(ExtensibilityGlobals) = postSolution
-		SolutionGuid = {BFBA57B4-2E02-4D6B-9596-C4E0FD2B7CE3}
-	EndGlobalSection
-EndGlobal
+using System;
+using System.Collections.Generic;
+
+namespace RegistroAsistencia
+{
+    class Program
+    {
+        // Justificación:
+        // Usamos un diccionario con clave string (materia), que contiene otro diccionario (día -> lista de estudiantes).
+        // Esto permite agrupar estudiantes por materia y día, facilitando el registro, eliminación y consultas.
+        static Dictionary<string, Dictionary<string, List<string>>> asistencia = new();
+        static string[] diasSemana = { "Lunes", "Martes", "Miércoles", "Jueves", "Viernes" };
+        const int MAX_ESTUDIANTES_POR_CLASE = 3;
+
+        static void Main(string[] args)
+        {
+            while (true)
+            {
+                Console.WriteLine("\n--- Menú de Asistencia Semanal ---");
+                Console.WriteLine("1. Registrar estudiante");
+                Console.WriteLine("2. Eliminar estudiante");
+                Console.WriteLine("3. Consultar estudiantes");
+                Console.WriteLine("4. Salir");
+                Console.Write("Seleccione una opción: ");
+                string opcion = Console.ReadLine();
+
+                switch (opcion)
+                {
+                    case "1":
+                        RegistrarEstudiante();
+                        break;
+                    case "2":
+                        EliminarEstudiante();
+                        break;
+                    case "3":
+                        ConsultarEstudiantes();
+                        break;
+                    case "4":
+                        Console.WriteLine("Saliendo del sistema...");
+                        return;
+                    default:
+                        Console.WriteLine("Opción inválida.");
+                        break;
+                }
+            }
+        }
+
+        static void RegistrarEstudiante()
+        {
+            Console.Write("Ingrese el nombre de la materia: ");
+            string materia = Console.ReadLine();
+
+            Console.Write("Ingrese el día (Lunes a Viernes): ");
+            string dia = Console.ReadLine();
+
+            if (!EsDiaValido(dia))
+            {
+                Console.WriteLine("Día inválido.");
+                return;
+            }
+
+            Console.Write("Nombre del estudiante: ");
+            string estudiante = Console.ReadLine();
+
+            if (!asistencia.ContainsKey(materia))
+            {
+                asistencia[materia] = new Dictionary<string, List<string>>();
+                foreach (var d in diasSemana)
+                {
+                    asistencia[materia][d] = new List<string>();
+                }
+            }
+
+            var grupo = asistencia[materia][dia];
+
+            if (grupo.Contains(estudiante))
+            {
+                Console.WriteLine("Este estudiante ya está registrado en esta clase.");
+                return;
+            }
+
+            if (grupo.Count >= MAX_ESTUDIANTES_POR_CLASE)
+            {
+                Console.WriteLine("Esta clase ya tiene el número máximo de estudiantes.");
+                return;
+            }
+
+            grupo.Add(estudiante);
+            Console.WriteLine($"{estudiante} registrado exitosamente en {materia} el {dia}.");
+        }
+
+        static void EliminarEstudiante()
+        {
+            Console.Write("Materia: ");
+            string materia = Console.ReadLine();
+
+            Console.Write("Día: ");
+            string dia = Console.ReadLine();
+
+            Console.Write("Nombre del estudiante a eliminar: ");
+            string estudiante = Console.ReadLine();
+
+            if (asistencia.ContainsKey(materia) && asistencia[materia].ContainsKey(dia))
+            {
+                if (asistencia[materia][dia].Remove(estudiante))
+                {
+                    Console.WriteLine("Estudiante eliminado.");
+                }
+                else
+                {
+                    Console.WriteLine("Estudiante no encontrado en ese grupo.");
+                }
+            }
+            else
+            {
+                Console.WriteLine("Materia o día no encontrado.");
+            }
+        }
+
+        static void ConsultarEstudiantes()
+        {
+            Console.Write("Consultar por (1) materia y día o (2) día completo: ");
+            string opcion = Console.ReadLine();
+
+            if (opcion == "1")
+            {
+                Console.Write("Materia: ");
+                string materia = Console.ReadLine();
+
+                Console.Write("Día: ");
+                string dia = Console.ReadLine();
+
+                if (asistencia.ContainsKey(materia) && asistencia[materia].ContainsKey(dia))
+                {
+                    Console.WriteLine($"Estudiantes en {materia} el {dia}:");
+                    foreach (var est in asistencia[materia][dia])
+                    {
+                        Console.WriteLine($"- {est}");
+                    }
+                }
+                else
+                {
+                    Console.WriteLine("No hay registros.");
+                }
+            }
+            else if (opcion == "2")
+            {
+                Console.Write("Día: ");
+                string dia = Console.ReadLine();
+
+                if (!EsDiaValido(dia))
+                {
+                    Console.WriteLine("Día inválido.");
+                    return;
+                }
+
+                Console.WriteLine($"Estudiantes en todas las materias el {dia}:");
+                foreach (var materia in asistencia)
+                {
+                    if (materia.Value.ContainsKey(dia))
+                    {
+                        Console.WriteLine($"Materia: {materia.Key}");
+                        foreach (var est in materia.Value[dia])
+                        {
+                            Console.WriteLine($"- {est}");
+                        }
+                    }
+                }
+            }
+            else
+            {
+                Console.WriteLine("Opción inválida.");
+            }
+        }
+
+        static bool EsDiaValido(string dia)
+        {
+            foreach (string d in diasSemana)
+            {
+                if (string.Equals(d, dia, StringComparison.OrdinalIgnoreCase))
+                    return true;
+            }
+            return false;
+        }
+    }
+}
